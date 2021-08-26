@@ -12,3 +12,5 @@ warnings.filterwarnings('ignore')
 
 from Visualizer import Visualizer
 from networks.cenet import CE_Net_
+from framework import MyFrame
+

@@ -180,6 +180,13 @@ class TTAFrame():
         self.net.load_state_dict(model)
 
 
+def dice_coefficient(a, b):
+    a_bigrams = a.astype(np.uint8)
+    b_bigrams = b.astype(np.uint8)
+    overlap  = a_bigrams + b_bigrams
+    overlap = np.sum(overlap==2)
+    return overlap * 2.0/(np.sum(a_bigrams) + np.sum(b_bigrams))
+
 def test_ce_net_ORIGA():
     root_path = '/data/zaiwang/Dataset/ORIGA'
     read_files = os.path.join(root_path, 'Set_B.txt')
@@ -207,13 +214,14 @@ def test_ce_net_ORIGA():
     hausdorff = 0
     total_acc = []
     total_sen = []
+    total_dice_error = []
     threshold = 4
     total_auc = []
 
     disc = 20
     # for i in range(len(images_list)):
     print("-------------------------------------------")
-    print('ID, ACC, Sen, AUC')
+    print('ID, ACC, Sen, AUC, DICE_error')
     for i in range(2):
 
 
@@ -243,16 +251,20 @@ def test_ce_net_ORIGA():
         gt[ground_truth > 0] = 1
 
         acc, sen = accuracy(predi_mask[:, :, 0], gt)
+        dice = dice_coefficient(predi_mask[:, :, 0], gt)
+        dice_error = 1 - dice
+        total_dice_error.append(dice_error)
         total_acc.append(acc)
         total_sen.append(sen)
 
-        print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth))
+        print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth), dice_error)
         name = image_path.split('/')[-1]
         cv2.imwrite(target + name.split('.')[0] + '-mask.png', mask.astype(np.uint8))
 
     print("total_acc mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_acc), np.std(total_acc)))
     print("total_sen mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_sen), np.std(total_sen)))
     print("total_auc mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_auc), np.std(total_auc)))
+    print("total_dice error mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_dice_error), np.std(total_dice_error)))
 
 if __name__ == '__main__':
     test_ce_net_ORIGA()

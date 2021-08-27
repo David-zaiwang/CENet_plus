@@ -15,7 +15,7 @@ from time import time
 from Visualizer import Visualizer
 from networks.cenet import CE_Net_
 from framework import MyFrame
-from loss import dice_bce_loss
+from loss import dice_bce_loss, boundary_dice_bce_loss
 from PIL import Image
 from data import ImageFolder
 import cv2
@@ -27,11 +27,17 @@ def train_CE_Net_Vessel():
     IMAGE_SHAPE = (448, 448)
     Use_Test = False
     ROOT = '/data/zaiwang/Dataset/ORIGA'
-    NAME = 'Unet-origin-' + ROOT.split('/')[-1]
+    # 20210826 NAME = 'Unet-origin-' + ROOT.split('/')[-1]
+    # 20210827 NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
+    NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
     BATCH_SIZE_PER_CARD = 12
     viz = Visualizer(env=NAME)
 
-    solver = MyFrame(CE_Net_, dice_bce_loss, 2e-4)
+    # 20210826 dice_bce_loss
+    # 20210827 boundary_dice_bce_loss
+    loss_type = boundary_dice_bce_loss
+    solver = MyFrame(CE_Net_, loss_type, 2e-4)
+
 
     batch_size = torch.cuda.device_count() * BATCH_SIZE_PER_CARD
 
@@ -112,5 +118,6 @@ def train_CE_Net_Vessel():
     mylog.close()
 
 if __name__ == '__main__':
+    # step 1 : python -m visdom.server
     print(torch.cuda.device_count())
     train_CE_Net_Vessel()

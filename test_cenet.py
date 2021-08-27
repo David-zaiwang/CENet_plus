@@ -206,6 +206,7 @@ def test_ce_net_ORIGA():
         masks_list.append(label_path)
     solver = TTAFrame(CE_Net_)
     # solver.load('weights/log01_dink34-DCENET-DRIVE.th')
+    # solver.load('./weights/boundary_iou-ORIGA-v1.th')
     solver.load('./weights/Unet-origin-ORIGA.th')
     tic = time()
     target = './submits/log_CE_Net/'

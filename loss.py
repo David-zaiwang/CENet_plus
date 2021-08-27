@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+from Metrics import mask_to_boundary
 
 import cv2
 import numpy as np
@@ -70,6 +71,58 @@ def test_weight_cross_entropy():
     print(weighted_cross_entropy()(targets_fl, inputs_fl))
 
 
+class boundary_dice_bce_loss(nn.Module):
+    def __init__(self, batch=True):
+        super(boundary_dice_bce_loss, self).__init__()
+        self.batch = batch
+        self.bce_loss = nn.BCELoss()
+
+    def soft_dice_coeff(self, y_true, y_pred):
+        smooth = 0.0  # may change
+        if self.batch:
+            i = torch.sum(y_true)
+            j = torch.sum(y_pred)
+            intersection = torch.sum(y_true * y_pred)
+        else:
+            i = y_true.sum(1).sum(1).sum(1)
+            j = y_pred.sum(1).sum(1).sum(1)
+            intersection = (y_true * y_pred).sum(1).sum(1).sum(1)
+        score = (2. * intersection + smooth) / (i + j + smooth)
+        # score = (intersection + smooth) / (i + j - intersection + smooth)#iou
+        return score.mean()
+
+    def soft_dice_loss(self, y_true, y_pred):
+        loss = 1 - self.soft_dice_coeff(y_true, y_pred)
+        return loss
+
+    def batch_mask_to_boundary(self, y_true, y_pred):
+        batch, channel, height, width = y_true.size()
+        y_true_boundary_batch = np.zeros(shape=(batch, height, width))
+        y_pred_boundary_batch = np.zeros(shape=(batch, height, width))
+
+        for i in range(batch):
+            y_true_mask = y_true.cpu().detach().numpy()[i, 0, :, :]
+            y_pred_mask = y_pred.cpu().detach().numpy()[i, 0, :, :]
+            # shape (448, 448)(448, 448)
+            y_true_mask_boundary = mask_to_boundary(y_true_mask)
+            y_pred_mask_boundary = mask_to_boundary(y_pred_mask)
+
+            y_true_boundary_batch[i, :, :] = y_true_mask_boundary
+            y_pred_boundary_batch[i, :, :] = y_pred_mask_boundary
+
+        y_true_boundary_mask = torch.Tensor(y_true_boundary_batch).cuda()
+        y_pred_boundary_mask = torch.Tensor(y_pred_boundary_batch).cuda()
+        # torch.Size([12, 448, 448])
+        return y_true_boundary_mask, y_pred_boundary_mask
+
+    def __call__(self, y_true, y_pred):
+        a = self.bce_loss(y_pred, y_true)
+        b = self.soft_dice_loss(y_true, y_pred)
+
+        y_true_boundary, y_pred_boundary = self.batch_mask_to_boundary(y_true, y_pred)
+        b_aux = self.soft_dice_loss(y_true_boundary, y_pred_boundary)
+        return b + b_aux
+
 class dice_bce_loss(nn.Module):
     def __init__(self, batch=True):
         super(dice_bce_loss, self).__init__()
@@ -97,6 +150,7 @@ class dice_bce_loss(nn.Module):
     def __call__(self, y_true, y_pred):
         a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
+
         return b
 
 

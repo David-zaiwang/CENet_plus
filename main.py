@@ -6,9 +6,11 @@ import torch.utils.data as data
 from torch.autograd import Variable as V
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 import warnings
+
 warnings.filterwarnings('ignore')
 
 from time import time
@@ -22,22 +24,24 @@ import cv2
 import numpy as np
 from Metrics import calculate_auc_test, accuracy
 
+ROOT = '/data/zaiwang/Dataset/ORIGA'
+NETWORK = CE_Net_
+LOSS_TYPE = dice_bce_loss
+# 20210826 NAME = 'Unet-origin-' + ROOT.split('/')[-1]
+# 20210827 NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
+NAME = 'CE_Net_' + 'dice_bce_loss' + '-' + ROOT.split('/')[-1] + '-v1'
+print(NAME)
 
 def train_CE_Net_Vessel():
     IMAGE_SHAPE = (448, 448)
     Use_Test = False
-    ROOT = '/data/zaiwang/Dataset/ORIGA'
-    # 20210826 NAME = 'Unet-origin-' + ROOT.split('/')[-1]
-    # 20210827 NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
-    NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
     BATCH_SIZE_PER_CARD = 12
     viz = Visualizer(env=NAME)
 
     # 20210826 dice_bce_loss
     # 20210827 boundary_dice_bce_loss
     loss_type = boundary_dice_bce_loss
-    solver = MyFrame(CE_Net_, loss_type, 2e-4)
-
+    solver = MyFrame(NETWORK, LOSS_TYPE, 2e-4)
 
     batch_size = torch.cuda.device_count() * BATCH_SIZE_PER_CARD
 
@@ -54,7 +58,7 @@ def train_CE_Net_Vessel():
 
     tic = time()
     no_optim = 0
-    total_epoch = 500
+    total_epoch = 320
     train_epoch_best_loss = 10000.
 
     for epoch in range(0, total_epoch + 1):
@@ -116,6 +120,7 @@ def train_CE_Net_Vessel():
     print(mylog, 'Finish!')
     print('Finish!')
     mylog.close()
+
 
 if __name__ == '__main__':
     # step 1 : python -m visdom.server

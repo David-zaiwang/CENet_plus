@@ -207,9 +207,11 @@ def test_ce_net_ORIGA():
     solver = TTAFrame(CE_Net_)
     # solver.load('weights/log01_dink34-DCENET-DRIVE.th')
     # solver.load('./weights/boundary_iou-ORIGA-v1.th')
-    solver.load('./weights/Unet-origin-ORIGA.th')
+    weight_path ='./weights/CE_Net_dice_bce_loss-ORIGA-v1.th'
+    solver.load(weight_path)
     tic = time()
-    target = './submits/log_CE_Net/'
+    NAME = weight_path.split('/')[-1].replace('.th', '')
+    target = './submits/' + NAME + '/'
     if not os.path.exists(target):
         os.mkdir(target)
     total_m1 = 0

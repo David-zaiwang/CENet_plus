@@ -10,6 +10,7 @@ import numpy as np
 
 from time import time
 from PIL import Image
+from Metrics import dice, mask_iou
 
 import warnings
 
@@ -215,14 +216,15 @@ def test_ce_net_ORIGA():
     total_acc = []
     total_sen = []
     total_dice_error = []
+    total_mask_iou = []
     threshold = 4
     total_auc = []
 
     disc = 20
     # for i in range(len(images_list)):
     print("-------------------------------------------")
-    print('ID, ACC, Sen, AUC, DICE_error')
-    for i in range(2):
+    print('ID, ACC, Sen, AUC, DICE_error, MASK_error')
+    for i in range(len(masks_list)):
 
 
         image_path = images_list[i]
@@ -251,13 +253,18 @@ def test_ce_net_ORIGA():
         gt[ground_truth > 0] = 1
 
         acc, sen = accuracy(predi_mask[:, :, 0], gt)
-        dice = dice_coefficient(predi_mask[:, :, 0], gt)
-        dice_error = 1 - dice
+        # dice = dice_coefficient(predi_mask[:, :, 0], gt)
+        dice_coe = dice(predi_mask[:, :, 0], gt)
+        dice_error = 1 - dice_coe
+
+        iou_error = 1 - mask_iou(predi_mask[:, :, 0], gt)
+        total_mask_iou.append(iou_error)
+
         total_dice_error.append(dice_error)
         total_acc.append(acc)
         total_sen.append(sen)
 
-        print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth), dice_error)
+        print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth), dice_error, iou_error)
         name = image_path.split('/')[-1]
         cv2.imwrite(target + name.split('.')[0] + '-mask.png', mask.astype(np.uint8))
 
@@ -265,6 +272,7 @@ def test_ce_net_ORIGA():
     print("total_sen mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_sen), np.std(total_sen)))
     print("total_auc mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_auc), np.std(total_auc)))
     print("total_dice error mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_dice_error), np.std(total_dice_error)))
+    print("total_mask error mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_mask_iou), np.std(total_mask_iou)))
 
 if __name__ == '__main__':
     test_ce_net_ORIGA()

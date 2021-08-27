@@ -10,13 +10,14 @@ import numpy as np
 
 from time import time
 from PIL import Image
-from Metrics import dice, mask_iou
+from Metrics import dice, mask_iou, mask_to_boundary
 
 import warnings
 
 warnings.filterwarnings('ignore')
 
 from networks.cenet import CE_Net_
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '6'
 
 BATCHSIZE_PER_CARD = 8
@@ -28,7 +29,6 @@ def calculate_auc_test(prediction, label):
     result_1D = prediction.flatten()
     label_1D = label.flatten()
 
-
     label_1D = label_1D / 255
 
     auc = metrics.roc_auc_score(label_1D.astype(np.uint8), result_1D)
@@ -36,6 +36,7 @@ def calculate_auc_test(prediction, label):
     # print("AUC={0:.4f}".format(auc))
 
     return auc
+
 
 def accuracy(pred_mask, label):
     '''
@@ -59,12 +60,11 @@ def accuracy(pred_mask, label):
     sen = TP / (TP + FN)
     return acc, sen
 
+
 class TTAFrame():
     def __init__(self, net):
         self.net = net().cuda()
         self.net = torch.nn.DataParallel(self.net, device_ids=range(torch.cuda.device_count()))
-
-
 
     def test_one_img_from_path(self, path, evalmode=True):
         if evalmode:
@@ -184,9 +184,10 @@ class TTAFrame():
 def dice_coefficient(a, b):
     a_bigrams = a.astype(np.uint8)
     b_bigrams = b.astype(np.uint8)
-    overlap  = a_bigrams + b_bigrams
-    overlap = np.sum(overlap==2)
-    return overlap * 2.0/(np.sum(a_bigrams) + np.sum(b_bigrams))
+    overlap = a_bigrams + b_bigrams
+    overlap = np.sum(overlap == 2)
+    return overlap * 2.0 / (np.sum(a_bigrams) + np.sum(b_bigrams))
+
 
 def test_ce_net_ORIGA():
     root_path = '/data/zaiwang/Dataset/ORIGA'
@@ -217,16 +218,15 @@ def test_ce_net_ORIGA():
     total_sen = []
     total_dice_error = []
     total_mask_iou = []
+    total_boundary_mask_iou = []
     threshold = 4
     total_auc = []
 
     disc = 20
     # for i in range(len(images_list)):
     print("-------------------------------------------")
-    print('ID, ACC, Sen, AUC, DICE_error, MASK_error')
+    print('ID, ACC, Sen, AUC, DICE_error, MASK_error, boundary_error')
     for i in range(len(masks_list)):
-
-
         image_path = images_list[i]
 
         mask = solver.test_one_img_from_path(image_path)
@@ -260,19 +260,30 @@ def test_ce_net_ORIGA():
         iou_error = 1 - mask_iou(predi_mask[:, :, 0], gt)
         total_mask_iou.append(iou_error)
 
+        # boundary mask IOU
+        prediction_boundary_mask = mask_to_boundary(predi_mask[:, :, 0])
+        gt_boundary_mask = mask_to_boundary(gt)
+        boundary_mask_iou = 1 - mask_iou(prediction_boundary_mask, gt_boundary_mask)
+        total_boundary_mask_iou.append(boundary_mask_iou)
+
         total_dice_error.append(dice_error)
         total_acc.append(acc)
         total_sen.append(sen)
 
-        print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth), dice_error, iou_error)
+        print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth), dice_error, iou_error,
+              boundary_mask_iou)
         name = image_path.split('/')[-1]
         cv2.imwrite(target + name.split('.')[0] + '-mask.png', mask.astype(np.uint8))
 
     print("total_acc mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_acc), np.std(total_acc)))
     print("total_sen mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_sen), np.std(total_sen)))
     print("total_auc mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_auc), np.std(total_auc)))
-    print("total_dice error mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_dice_error), np.std(total_dice_error)))
+    print("total_dice error mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_dice_error),
+                                                                      np.std(total_dice_error)))
     print("total_mask error mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_mask_iou), np.std(total_mask_iou)))
+    print("total_bound error mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_boundary_mask_iou),
+                                                                       np.std(total_boundary_mask_iou)))
+
 
 if __name__ == '__main__':
     test_ce_net_ORIGA()

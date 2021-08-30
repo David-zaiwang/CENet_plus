@@ -66,16 +66,27 @@ class TTAFrame():
         self.net = net().cuda()
         self.net = torch.nn.DataParallel(self.net, device_ids=range(torch.cuda.device_count()))
 
-    def test_one_img_from_path(self, path, evalmode=True):
+    def test_one_img_from_path(self, path, evalmode=True, without_TTA=False):
         if evalmode:
             self.net.eval()
         batchsize = torch.cuda.device_count() * BATCHSIZE_PER_CARD
-        if batchsize >= 8:
+        if without_TTA:
+            return self.test_one_img_without_test_aug(path)
+        elif batchsize >= 8:
             return self.test_one_img_from_path_1(path)
         elif batchsize >= 4:
             return self.test_one_img_from_path_2(path)
         elif batchsize >= 2:
             return self.test_one_img_from_path_4(path)
+
+    def test_one_img_without_test_aug(self, path):
+        img = cv2.imread(path)
+        img = cv2.resize(img, (448, 448))
+        img = np.expand_dims(img, 0)
+        img = img.transpose(0, 3, 1, 2)
+        img = V(torch.Tensor(np.array(img, np.float32) / 255.0 * 3.2 - 1.6).cuda())
+        mask = self.net.forward(img).squeeze().cpu().data.numpy()
+        return mask
 
     def test_one_img_from_path_8(self, path):
         img = cv2.imread(path)  # .transpose(2,0,1)[None]
@@ -191,6 +202,7 @@ def dice_coefficient(a, b):
 
 def test_ce_net_ORIGA():
     root_path = '/data/zaiwang/Dataset/ORIGA'
+    without_TTA = True
     read_files = os.path.join(root_path, 'Set_B.txt')
 
     image_root = os.path.join(root_path, 'images')
@@ -207,7 +219,7 @@ def test_ce_net_ORIGA():
     solver = TTAFrame(CE_Net_)
     # solver.load('weights/log01_dink34-DCENET-DRIVE.th')
     # solver.load('./weights/boundary_iou-ORIGA-v1.th')
-    weight_path ='./weights/CE_Net_dice_bce_loss-ORIGA-v1.th'
+    weight_path = './weights/boundary_iou-ORIGA-v1.th'
     solver.load(weight_path)
     tic = time()
     NAME = weight_path.split('/')[-1].replace('.th', '')
@@ -222,62 +234,103 @@ def test_ce_net_ORIGA():
     total_dice_error = []
     total_mask_iou = []
     total_boundary_mask_iou = []
-    threshold = 4
+    if without_TTA:
+        threshold = 0.5
+    else:
+        threshold = 4
     total_auc = []
 
     disc = 20
-    # for i in range(len(images_list)):
+    if len(os.listdir(target)) == len(masks_list) + 1:
+        print("This model has been evaluated, and the results could directly be used to ")
+        for i in range(len(masks_list)):
+            image_path = images_list[i]
+            ground_truth_path = masks_list[i]
+
+            ground_truth = np.array(Image.open(ground_truth_path))
+            mask_path = target + image_path.split('/')[-1].split('.')[0] + '-mask.png'
+            mask = cv2.imread(mask_path)
+
+            new_mask = mask[:, :, 0].copy()
+            total_auc.append(calculate_auc_test(new_mask / 8., ground_truth))
+
+            predi_mask = np.zeros(shape=np.shape(mask))
+            predi_mask[mask > disc] = 1
+            gt = np.zeros(shape=np.shape(ground_truth))
+            gt[ground_truth > 0] = 1
+
+            acc, sen = accuracy(predi_mask[:, :, 0], gt)
+            # dice = dice_coefficient(predi_mask[:, :, 0], gt)
+            dice_coe = dice(predi_mask[:, :, 0], gt)
+            dice_error = 1 - dice_coe
+
+            iou_error = 1 - mask_iou(predi_mask[:, :, 0], gt)
+            total_mask_iou.append(iou_error)
+
+            # boundary mask IOU
+            prediction_boundary_mask = mask_to_boundary(predi_mask[:, :, 0])
+            gt_boundary_mask = mask_to_boundary(gt)
+            boundary_mask_iou = 1 - mask_iou(prediction_boundary_mask, gt_boundary_mask)
+            total_boundary_mask_iou.append(boundary_mask_iou)
+
+            total_dice_error.append(dice_error)
+            total_acc.append(acc)
+            total_sen.append(sen)
+
+            print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth), dice_error, iou_error,
+                  boundary_mask_iou)
+    else:
+        for i in range(len(masks_list)):
+            image_path = images_list[i]
+
+            mask = solver.test_one_img_from_path(image_path, without_TTA=without_TTA)
+
+            new_mask = mask.copy()
+
+            mask[mask > threshold] = 255
+            mask[mask <= threshold] = 0
+            mask = np.concatenate([mask[:, :, None], mask[:, :, None], mask[:, :, None]], axis=2)
+
+            ground_truth_path = masks_list[i]
+
+            # print(ground_truth_path)
+            ground_truth = np.array(Image.open(ground_truth_path))
+
+            mask = cv2.resize(mask, dsize=(np.shape(ground_truth)[1], np.shape(ground_truth)[0]))
+
+            new_mask = cv2.resize(new_mask, dsize=(np.shape(ground_truth)[1], np.shape(ground_truth)[0]))
+            total_auc.append(calculate_auc_test(new_mask / 8., ground_truth))
+
+            predi_mask = np.zeros(shape=np.shape(mask))
+            predi_mask[mask > disc] = 1
+            gt = np.zeros(shape=np.shape(ground_truth))
+            gt[ground_truth > 0] = 1
+
+            acc, sen = accuracy(predi_mask[:, :, 0], gt)
+            # dice = dice_coefficient(predi_mask[:, :, 0], gt)
+            dice_coe = dice(predi_mask[:, :, 0], gt)
+            dice_error = 1 - dice_coe
+
+            iou_error = 1 - mask_iou(predi_mask[:, :, 0], gt)
+            total_mask_iou.append(iou_error)
+
+            # boundary mask IOU
+            prediction_boundary_mask = mask_to_boundary(predi_mask[:, :, 0])
+            gt_boundary_mask = mask_to_boundary(gt)
+            boundary_mask_iou = 1 - mask_iou(prediction_boundary_mask, gt_boundary_mask)
+            total_boundary_mask_iou.append(boundary_mask_iou)
+
+            total_dice_error.append(dice_error)
+            total_acc.append(acc)
+            total_sen.append(sen)
+
+            print(i + 1, acc, sen, calculate_auc_test(new_mask / (2 * threshold), ground_truth), dice_error, iou_error,
+                  boundary_mask_iou)
+            name = image_path.split('/')[-1]
+            cv2.imwrite(target + name.split('.')[0] + '-mask.png', mask.astype(np.uint8))
+
     print("-------------------------------------------")
     print('ID, ACC, Sen, AUC, DICE_error, MASK_error, boundary_error')
-    for i in range(len(masks_list)):
-        image_path = images_list[i]
-
-        mask = solver.test_one_img_from_path(image_path)
-
-        new_mask = mask.copy()
-
-        mask[mask > threshold] = 255
-        mask[mask <= threshold] = 0
-        mask = np.concatenate([mask[:, :, None], mask[:, :, None], mask[:, :, None]], axis=2)
-
-        ground_truth_path = masks_list[i]
-
-        # print(ground_truth_path)
-        ground_truth = np.array(Image.open(ground_truth_path))
-
-        mask = cv2.resize(mask, dsize=(np.shape(ground_truth)[1], np.shape(ground_truth)[0]))
-
-        new_mask = cv2.resize(new_mask, dsize=(np.shape(ground_truth)[1], np.shape(ground_truth)[0]))
-        total_auc.append(calculate_auc_test(new_mask / 8., ground_truth))
-
-        predi_mask = np.zeros(shape=np.shape(mask))
-        predi_mask[mask > disc] = 1
-        gt = np.zeros(shape=np.shape(ground_truth))
-        gt[ground_truth > 0] = 1
-
-        acc, sen = accuracy(predi_mask[:, :, 0], gt)
-        # dice = dice_coefficient(predi_mask[:, :, 0], gt)
-        dice_coe = dice(predi_mask[:, :, 0], gt)
-        dice_error = 1 - dice_coe
-
-        iou_error = 1 - mask_iou(predi_mask[:, :, 0], gt)
-        total_mask_iou.append(iou_error)
-
-        # boundary mask IOU
-        prediction_boundary_mask = mask_to_boundary(predi_mask[:, :, 0])
-        gt_boundary_mask = mask_to_boundary(gt)
-        boundary_mask_iou = 1 - mask_iou(prediction_boundary_mask, gt_boundary_mask)
-        total_boundary_mask_iou.append(boundary_mask_iou)
-
-        total_dice_error.append(dice_error)
-        total_acc.append(acc)
-        total_sen.append(sen)
-
-        print(i + 1, acc, sen, calculate_auc_test(new_mask / 8., ground_truth), dice_error, iou_error,
-              boundary_mask_iou)
-        name = image_path.split('/')[-1]
-        cv2.imwrite(target + name.split('.')[0] + '-mask.png', mask.astype(np.uint8))
-
     print("total_acc mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_acc), np.std(total_acc)))
     print("total_sen mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_sen), np.std(total_sen)))
     print("total_auc mean : {0:.5f}, and std : {0:.5f}".format(np.mean(total_auc), np.std(total_auc)))

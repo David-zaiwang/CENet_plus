@@ -24,12 +24,14 @@ import cv2
 import numpy as np
 from Metrics import calculate_auc_test, accuracy
 
-ROOT = '/data/zaiwang/Dataset/ORIGA'
+# ROOT = '/data/zaiwang/Dataset/ORIGA'
+ROOT = '/data/zaiwang/Dataset/Messidor'
 NETWORK = CE_Net_
 LOSS_TYPE = dice_bce_loss
+Dataset_name = ROOT.split('/')[-1]
 # 20210826 NAME = 'Unet-origin-' + ROOT.split('/')[-1]
 # 20210827 NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
-NAME = 'CE_Net_' + 'dice_bce_loss' + '-' + ROOT.split('/')[-1] + '-v1'
+NAME = 'CE_Net_' + 'dice_bce_loss' + '-' + Dataset_name + '-v1'
 print(NAME)
 
 def train_CE_Net_Vessel():
@@ -47,7 +49,7 @@ def train_CE_Net_Vessel():
 
     # Preparing the dataloader
 
-    dataset = ImageFolder(root_path=ROOT, datasets='ORIGA')
+    dataset = ImageFolder(root_path=ROOT, datasets=Dataset_name)
     data_loader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,

@@ -201,25 +201,44 @@ def dice_coefficient(a, b):
 
 
 def test_ce_net_ORIGA():
-    root_path = '/data/zaiwang/Dataset/ORIGA'
+    root_path = '/data/zaiwang/Dataset/Messidor'
     without_TTA = True
-    read_files = os.path.join(root_path, 'Set_B.txt')
+    test_dataset_category_name = root_path.split('/')[-1]
+    if test_dataset_category_name == 'ORIGA':
+        read_files = os.path.join(root_path, 'Set_B.txt')
 
-    image_root = os.path.join(root_path, 'images')
-    gt_root = os.path.join(root_path, 'masks')
+        image_root = os.path.join(root_path, 'images')
+        gt_root = os.path.join(root_path, 'masks')
 
-    images_list = []
-    masks_list = []
-    for image_name in open(read_files):
-        image_path = os.path.join(image_root, image_name.split('.')[0] + '.jpg')
-        label_path = os.path.join(gt_root, image_name.split('.')[0] + '.jpg')
+        images_list = []
+        masks_list = []
+        for image_name in open(read_files):
+            image_path = os.path.join(image_root, image_name.split('.')[0] + '.jpg')
+            label_path = os.path.join(gt_root, image_name.split('.')[0] + '.jpg')
 
-        images_list.append(image_path)
-        masks_list.append(label_path)
+            images_list.append(image_path)
+            masks_list.append(label_path)
+    elif test_dataset_category_name == 'Messidor':
+        read_files = os.path.join(root_path, 'test.txt')
+
+        image_root = os.path.join(root_path, 'save_image')
+        gt_root = os.path.join(root_path, 'save_mask')
+
+        images_list = []
+        masks_list = []
+        for image_name in open(read_files):
+            image_path = os.path.join(image_root, image_name.split('.')[0] + '.png')
+            label_path = os.path.join(gt_root, image_name.split('.')[0] + '.png')
+
+            images_list.append(image_path)
+            masks_list.append(label_path)
+    else:
+        images_list = []
+        masks_list = []
     solver = TTAFrame(CE_Net_)
     # solver.load('weights/log01_dink34-DCENET-DRIVE.th')
     # solver.load('./weights/boundary_iou-ORIGA-v1.th')
-    weight_path = './weights/boundary_iou-ORIGA-v1.th'
+    weight_path = './weights/CE_Net_boundary_dice_bce_loss-Messidor-v1.th'
     solver.load(weight_path)
     tic = time()
     NAME = weight_path.split('/')[-1].replace('.th', '')

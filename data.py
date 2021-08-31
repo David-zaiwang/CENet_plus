@@ -181,6 +181,30 @@ def read_ORIGA_datasets(root_path, mode='train'):
 
     return images, masks
 
+def read_ORIGA_OD_datasets(root_path, mode='train'):
+    images = []
+    masks = []
+
+    if mode == 'train':
+        read_files = os.path.join(root_path, 'Set_A.txt')
+    else:
+        read_files = os.path.join(root_path, 'Set_B.txt')
+
+    image_root = os.path.join(root_path, 'crop_image')
+    gt_root = os.path.join(root_path, 'crop_mask')
+
+    for image_name in open(read_files):
+        image_path = os.path.join(image_root, image_name.split('.')[0] + '.jpg')
+        label_path = os.path.join(gt_root, image_name.split('.')[0] + '.png')
+
+        print(image_path, label_path)
+
+        images.append(image_path)
+        masks.append(label_path)
+
+    return images, masks
+
+
 def read_Messidor_datasets(root_path, mode='train'):
     images = []
     masks = []
@@ -307,7 +331,7 @@ class ImageFolder(data.Dataset):
         elif self.dataset == 'GAN_Vessel':
             self.images, self.labels = read_datasets_vessel(self.root, self.mode)
         elif self.dataset == 'ORIGA_OD':
-            self.images, self.labels = read_ORIGA_OD_datasets()
+            self.images, self.labels = read_ORIGA_OD_datasets(self.root, self.mode)
         else:
             print('Default dataset is Messidor')
             self.images, self.labels = read_Messidor_datasets(self.root, self.mode)

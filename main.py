@@ -32,7 +32,11 @@ LOSS_TYPE = boundary_dice_bce_loss
 Dataset_name = ROOT.split('/')[-1]
 # 20210826 NAME = 'Unet-origin-' + ROOT.split('/')[-1]
 # 20210827 NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
-NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v1'
+# NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v1'
+# V2: weighted boundary_dice_bce_loss weight = 0.5
+# NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v2'
+# V2: weighted boundary_dice_bce_loss weight = 0.25
+NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v3'
 print(NAME)
 
 def train_CE_Net_Vessel():

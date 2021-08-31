@@ -253,7 +253,7 @@ def test_ce_net_ORIGA():
     # solver.load('weights/log01_dink34-DCENET-DRIVE.th')
     # solver.load('./weights/boundary_iou-ORIGA-v1.th')
     # weight_path = './weights/CE_Net_boundary_dice_bce_loss-Messidor-v1.th'
-    weight_path = './weights/CE_Net_dice_bce_loss-ORIGA_OD-v1.th'
+    weight_path = './weights/CE_Net_boundary_dice_bce_loss-ORIGA_OD-v2.th'
     solver.load(weight_path)
     tic = time()
     NAME = weight_path.split('/')[-1].replace('.th', '')

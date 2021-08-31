@@ -5,6 +5,8 @@ This project is for CENet
 #### step 1.
 source activate yolov5
 
+python -m visdom.server
+
 #### step 2.
 python main.py
 

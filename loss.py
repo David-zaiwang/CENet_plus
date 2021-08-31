@@ -116,12 +116,12 @@ class boundary_dice_bce_loss(nn.Module):
         return y_true_boundary_mask, y_pred_boundary_mask
 
     def __call__(self, y_true, y_pred):
-        a = self.bce_loss(y_pred, y_true)
+        # a = self.bce_loss(y_pred, y_true)
         b = self.soft_dice_loss(y_true, y_pred)
 
         y_true_boundary, y_pred_boundary = self.batch_mask_to_boundary(y_true, y_pred)
         b_aux = self.soft_dice_loss(y_true_boundary, y_pred_boundary)
-        return b + b_aux
+        return b + 0.25 * b_aux
 
 class dice_bce_loss(nn.Module):
     def __init__(self, batch=True):

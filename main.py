@@ -25,7 +25,8 @@ import numpy as np
 from Metrics import calculate_auc_test, accuracy
 
 # ROOT = '/data/zaiwang/Dataset/ORIGA'
-ROOT = '/data/zaiwang/Dataset/Messidor'
+# ROOT = '/data/zaiwang/Dataset/Messidor'
+ROOT = '/data/zaiwang/Dataset/ORIGA_OD'
 NETWORK = CE_Net_
 LOSS_TYPE = boundary_dice_bce_loss
 Dataset_name = ROOT.split('/')[-1]

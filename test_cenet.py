@@ -201,7 +201,7 @@ def dice_coefficient(a, b):
 
 
 def test_ce_net_ORIGA():
-    root_path = '/data/zaiwang/Dataset/Messidor'
+    root_path = '/data/zaiwang/Dataset/ORIGA_OD'
     without_TTA = True
     test_dataset_category_name = root_path.split('/')[-1]
     if test_dataset_category_name == 'ORIGA':
@@ -232,13 +232,28 @@ def test_ce_net_ORIGA():
 
             images_list.append(image_path)
             masks_list.append(label_path)
+    elif test_dataset_category_name == 'ORIGA_OD':
+        read_files = os.path.join(root_path, 'Set_B.txt')
+
+        image_root = os.path.join(root_path, 'crop_image')
+        gt_root = os.path.join(root_path, 'crop_mask')
+
+        images_list = []
+        masks_list = []
+        for image_name in open(read_files):
+            image_path = os.path.join(image_root, image_name.split('.')[0] + '.jpg')
+            label_path = os.path.join(gt_root, image_name.split('.')[0] + '.png')
+
+            images_list.append(image_path)
+            masks_list.append(label_path)
     else:
         images_list = []
         masks_list = []
     solver = TTAFrame(CE_Net_)
     # solver.load('weights/log01_dink34-DCENET-DRIVE.th')
     # solver.load('./weights/boundary_iou-ORIGA-v1.th')
-    weight_path = './weights/CE_Net_boundary_dice_bce_loss-Messidor-v1.th'
+    # weight_path = './weights/CE_Net_boundary_dice_bce_loss-Messidor-v1.th'
+    weight_path = './weights/CE_Net_dice_bce_loss-ORIGA_OD-v1.th'
     solver.load(weight_path)
     tic = time()
     NAME = weight_path.split('/')[-1].replace('.th', '')

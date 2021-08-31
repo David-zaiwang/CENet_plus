@@ -306,6 +306,8 @@ class ImageFolder(data.Dataset):
             self.images, self.labels = read_Cell_datasets(self.root, self.mode)
         elif self.dataset == 'GAN_Vessel':
             self.images, self.labels = read_datasets_vessel(self.root, self.mode)
+        elif self.dataset == 'ORIGA_OD':
+            self.images, self.labels = read_ORIGA_OD_datasets()
         else:
             print('Default dataset is Messidor')
             self.images, self.labels = read_Messidor_datasets(self.root, self.mode)

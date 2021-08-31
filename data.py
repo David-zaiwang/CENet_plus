@@ -292,7 +292,7 @@ class ImageFolder(data.Dataset):
         self.root = root_path
         self.mode = mode
         self.dataset = datasets
-        assert self.dataset in ['RIM-ONE', 'Messidor', 'ORIGA', 'DRIVE', 'Cell', 'Vessel'], \
+        assert self.dataset in ['RIM-ONE', 'Messidor', 'ORIGA', 'DRIVE', 'Cell', 'Vessel', 'ORIGA_OD'], \
             "the dataset should be in 'Messidor', 'ORIGA', 'RIM-ONE', 'Vessel' "
         if self.dataset == 'RIM-ONE':
             self.images, self.labels = read_RIM_ONE_datasets(self.root, self.mode)

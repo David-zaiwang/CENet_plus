@@ -310,13 +310,36 @@ def read_datasets_vessel(root_path, mode='train'):
     return images, masks
 
 
+def read_ubt_person(root_path, mode='train'):
+    images = []
+    masks = []
+
+    if mode == 'train':
+        image_root = '/data/zaiwang/Dataset/humanseg/test/imgs'
+        gt_root = '/data/zaiwang/Dataset/humanseg/test/masks'
+    else:
+        image_root = '/data/zaiwang/Dataset/humanseg/val/imgs'
+        gt_root = '/data/zaiwang/Dataset/humanseg/val/masks'
+
+    for image_name in os.listdir(image_root):
+        image_path = os.path.join(image_root, image_name)
+        label_path = os.path.join(gt_root, image_name)
+
+        if cv2.imread(image_path) is not None:
+
+            if os.path.exists(image_path) and os.path.exists(label_path):
+                images.append(image_path)
+                masks.append(label_path)
+
+    return images, masks
+
 class ImageFolder(data.Dataset):
 
     def __init__(self,root_path, datasets='Messidor',  mode='train'):
         self.root = root_path
         self.mode = mode
         self.dataset = datasets
-        assert self.dataset in ['RIM-ONE', 'Messidor', 'ORIGA', 'DRIVE', 'Cell', 'Vessel', 'ORIGA_OD'], \
+        assert self.dataset in ['RIM-ONE', 'Messidor', 'ORIGA', 'DRIVE', 'Cell', 'Vessel', 'ORIGA_OD', 'humanseg'], \
             "the dataset should be in 'Messidor', 'ORIGA', 'RIM-ONE', 'Vessel' "
         if self.dataset == 'RIM-ONE':
             self.images, self.labels = read_RIM_ONE_datasets(self.root, self.mode)
@@ -332,6 +355,8 @@ class ImageFolder(data.Dataset):
             self.images, self.labels = read_datasets_vessel(self.root, self.mode)
         elif self.dataset == 'ORIGA_OD':
             self.images, self.labels = read_ORIGA_OD_datasets(self.root, self.mode)
+        elif self.dataset == 'humanseg':
+            self.images, self.labels = read_ubt_person(self.root, self.mode)
         else:
             print('Default dataset is Messidor')
             self.images, self.labels = read_Messidor_datasets(self.root, self.mode)

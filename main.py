@@ -7,7 +7,7 @@ from torch.autograd import Variable as V
 
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 import warnings
 
@@ -27,9 +27,10 @@ from test_cenet import test_ce_net_ORIGA
 
 # ROOT = '/data/zaiwang/Dataset/ORIGA'
 # ROOT = '/data/zaiwang/Dataset/Messidor'
-ROOT = '/data/zaiwang/Dataset/ORIGA_OD'
+# ROOT = '/data/zaiwang/Dataset/ORIGA_OD'
+ROOT = '/data/zaiwang/Dataset/humanseg'
 NETWORK = CE_Net_
-LOSS_TYPE = dice_bce_loss
+LOSS_TYPE = boundary_dice_bce_loss
 Dataset_name = ROOT.split('/')[-1]
 # 20210826 NAME = 'Unet-origin-' + ROOT.split('/')[-1]
 # 20210827 NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
@@ -37,7 +38,7 @@ Dataset_name = ROOT.split('/')[-1]
 # V2: weighted boundary_dice_bce_loss weight = 0.5
 # V3: weighted boundary_dice_bce_loss weight = 0.25
 # V4: weighted boundary_dice_bce_loss weight = 2
-NAME = 'CE_Net_' + 'dice_bce_loss' + '-' + Dataset_name + '-v1'
+NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v1'
 print(NAME)
 
 def train_CE_Net_Vessel():

@@ -23,20 +23,21 @@ from data import ImageFolder
 import cv2
 import numpy as np
 from Metrics import calculate_auc_test, accuracy
+from test_cenet import test_ce_net_ORIGA
 
 # ROOT = '/data/zaiwang/Dataset/ORIGA'
 # ROOT = '/data/zaiwang/Dataset/Messidor'
 ROOT = '/data/zaiwang/Dataset/ORIGA_OD'
 NETWORK = CE_Net_
-LOSS_TYPE = boundary_dice_bce_loss
+LOSS_TYPE = dice_bce_loss
 Dataset_name = ROOT.split('/')[-1]
 # 20210826 NAME = 'Unet-origin-' + ROOT.split('/')[-1]
 # 20210827 NAME = 'boundary_iou-' + ROOT.split('/')[-1] + '-v1'
-# NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v1'
+# V1: weighted boundary_dice_bce_loss weight = 1
 # V2: weighted boundary_dice_bce_loss weight = 0.5
-# NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v2'
-# V2: weighted boundary_dice_bce_loss weight = 0.25
-NAME = 'CE_Net_' + 'boundary_dice_bce_loss' + '-' + Dataset_name + '-v3'
+# V3: weighted boundary_dice_bce_loss weight = 0.25
+# V4: weighted boundary_dice_bce_loss weight = 2
+NAME = 'CE_Net_' + 'dice_bce_loss' + '-' + Dataset_name + '-v1'
 print(NAME)
 
 def train_CE_Net_Vessel():
@@ -55,6 +56,7 @@ def train_CE_Net_Vessel():
     # Preparing the dataloader
 
     dataset = ImageFolder(root_path=ROOT, datasets=Dataset_name)
+    TEST_RESULT = False
     data_loader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
@@ -65,9 +67,9 @@ def train_CE_Net_Vessel():
 
     tic = time()
     no_optim = 0
-    total_epoch = 320
+    total_epoch = 500
     train_epoch_best_loss = 10000.
-
+    save_weight_path = './weights/' + NAME + '.th'
     for epoch in range(0, total_epoch + 1):
         data_loader_iter = iter(data_loader)
         train_epoch_loss = 0
@@ -111,19 +113,27 @@ def train_CE_Net_Vessel():
         else:
             no_optim = 0
             train_epoch_best_loss = train_epoch_loss
-            solver.save('./weights/' + NAME + '.th')
+            solver.save(save_weight_path)
         if no_optim > 20:
+            test_ce_net_ORIGA(ROOT, save_weight_path)
+            TEST_RESULT = True
             print(mylog, 'early stop at %d epoch' % epoch)
             print('early stop at %d epoch' % epoch)
             break
         if no_optim > 10:
             if solver.old_lr < 5e-7:
+                test_ce_net_ORIGA(ROOT, save_weight_path)
+                TEST_RESULT = True
+                print("after 10 epochs, the loss did not decrease and lr is smaller than 5e-7")
                 break
             # solver.load('./weights/' + NAME + '.th')
             solver.update_lr(2.0, factor=True, mylog=mylog)
             no_optim = 0
         mylog.flush()
-
+    if TEST_RESULT:
+        print("The training process has finished")
+    else:
+        test_ce_net_ORIGA(ROOT, save_weight_path)
     print(mylog, 'Finish!')
     print('Finish!')
     mylog.close()

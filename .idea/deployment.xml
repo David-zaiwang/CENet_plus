@@ -5,6 +5,13 @@
       <paths name="CENet++">
         <serverdata>
           <mappings>
+            <mapping deploy="/data/zaiwang/workspace_2021/CE_Net++" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="image_segmentation">
+        <serverdata>
+          <mappings>
             <mapping deploy="/data/zaiwang/workspace_2021/CE_Net++" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>

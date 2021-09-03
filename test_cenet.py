@@ -246,6 +246,22 @@ def test_ce_net_ORIGA(root_path, weight_path):
 
             images_list.append(image_path)
             masks_list.append(label_path)
+    elif test_dataset_category_name == 'humanseg':
+        image_root = '/data/zaiwang/Dataset/humanseg/val/imgs'
+        gt_root = '/data/zaiwang/Dataset/humanseg/val/masks'
+
+        images_list = []
+        masks_list = []
+        for image_name in os.listdir(image_root):
+            image_path = os.path.join(image_root, image_name)
+            label_path = os.path.join(gt_root, image_name)
+
+            if cv2.imread(image_path) is not None:
+
+                if os.path.exists(image_path) and os.path.exists(label_path):
+                    images_list.append(image_path)
+                    masks_list.append(label_path)
+
     else:
         images_list = []
         masks_list = []
@@ -378,4 +394,6 @@ def test_ce_net_ORIGA(root_path, weight_path):
 
 
 if __name__ == '__main__':
-    test_ce_net_ORIGA()
+    root_path = '/data/zaiwang/Dataset/humanseg'
+    weight_path = './weights/CE_Net_boundary_dice_bce_loss-humanseg-v1.th'
+    test_ce_net_ORIGA(root_path, weight_path)

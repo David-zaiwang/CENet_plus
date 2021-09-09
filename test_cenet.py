@@ -216,8 +216,6 @@ def test_ce_net_ORIGA(root_path, weight_path):
             image_path = os.path.join(image_root, image_name.split('.')[0] + '.jpg')
             label_path = os.path.join(gt_root, image_name.split('.')[0] + '.jpg')
 
-
-
             images_list.append(image_path)
             masks_list.append(label_path)
     elif test_dataset_category_name == 'Messidor':
